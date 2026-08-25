@@ -2,40 +2,38 @@
 
 [English](./README.md) | [简体中文](./README.zh-CN.md)
 
-> **What if an MRI sequence could borrow the contrast knowledge of another modality?**
+> **Can DWI B800 be used to synthesize a spatially aligned T1CE image?**
 
-Contrast-enhanced T1-weighted MRI (T1CE) can make lesions and tissue boundaries easier to inspect, but it also adds contrast-agent exposure and acquisition overhead. Diffusion-weighted imaging at b=800 (DWI B800) captures different tissue behavior and is often available for the same anatomy.
+Contrast-enhanced T1-weighted MRI (T1CE) improves the visibility of lesions and tissue boundaries, but it requires a contrast agent and an additional acquisition. Diffusion-weighted imaging at b=800 (DWI B800) measures diffusion-related tissue characteristics and is often acquired over the same anatomy.
 
-This repository explores a promising connection between them: learn a generative prior for T1CE, then let DWI guide that prior toward a spatially aligned virtual contrast image.
+This project studies DWI-conditioned T1CE synthesis with latent diffusion. The model first learns the distribution of T1CE images, then uses DWI as a conditioning signal to synthesize the corresponding T1CE image.
 
-**The T1CE branch learns what contrast should look like. The DWI branch learns where it should appear.**
+## Method
 
-## Why not treat this as ordinary image translation?
+An end-to-end image translation model must learn both the target image distribution and the mapping from DWI to T1CE. With limited paired medical data, separating the T1CE generative prior from DWI condition encoding makes the training objectives more explicit.
 
-A direct image-to-image model has to solve two problems at once: learn the visual distribution of the target modality and discover which structures in the source modality should control it. When paired medical data is limited, those responsibilities compete for the same capacity.
-
-The prototype separates them:
+The implementation therefore uses four components:
 
 1. A variational autoencoder and an unconditional latent diffusion model learn the T1CE image space.
 2. A DWI encoder extracts multiscale structural features from B800 images.
 3. Gated cross-attention injects those features into the diffusion U-Net.
 4. Cross-modal distillation encourages the DWI representation to approach features learned from T1CE.
 
-The target-domain prior remains responsible for synthesis while the available modality supplies patient-specific structure.
+The diffusion model performs T1CE synthesis, while features extracted from DWI constrain the output for the current case.
 
-## One target, three learning stages
+## Training strategy
 
-### 1. Learn the target modality
+### 1. Train the T1CE prior
 
-A VAE compresses T1CE slices into a latent representation. An unconditional U-Net then learns to denoise that latent space, becoming a reusable T1CE generative prior.
+A VAE compresses T1CE slices into a latent representation. An unconditional U-Net learns noise prediction in that latent space and forms the T1CE generative prior.
 
-### 2. Guide generation from DWI
+### 2. Add DWI conditioning
 
-A dedicated DWI encoder produces features at several resolutions. Gated cross-attention introduces those features into the denoising path without replacing the pretrained target prior. The repository includes both the original conditional path and a classifier-free-guidance variant.
+A dedicated DWI encoder produces features at several resolutions. Gated cross-attention injects these features into the diffusion U-Net. The repository includes both the original conditional training path and a classifier-free-guidance variant.
 
-### 3. Transfer cross-modal structure
+### 3. Align features across modalities
 
-An adapter projects DWI features toward the feature hierarchy produced by the T1CE encoder. The distillation objective complements diffusion noise prediction: one loss teaches the model to generate, while the other teaches the two modalities to speak a more compatible structural language.
+An adapter projects DWI features into the feature hierarchy produced by the T1CE encoder. Training combines diffusion noise-prediction loss with feature-distillation loss to constrain image generation and cross-modal feature alignment separately.
 
 ## Architecture
 
@@ -106,7 +104,7 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-Training is organized around the three learning stages described above. Configuration lives in `config.py`.
+Training follows the three stages described above. Configuration lives in `config.py`.
 
 ```bash
 # Stage 1: learn the T1CE latent space and diffusion prior
