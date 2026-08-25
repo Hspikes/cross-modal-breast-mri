@@ -1,5 +1,7 @@
 # Cross-Modal Breast MRI Synthesis
 
+[English](./README.md) | [简体中文](./README.zh-CN.md)
+
 > **What if an MRI sequence could borrow the contrast knowledge of another modality?**
 
 Contrast-enhanced T1-weighted MRI (T1CE) can make lesions and tissue boundaries easier to inspect, but it also adds contrast-agent exposure and acquisition overhead. Diffusion-weighted imaging at b=800 (DWI B800) captures different tissue behavior and is often available for the same anatomy.
@@ -96,7 +98,7 @@ Each line in `train_list.txt` or `eval_list.txt` contains one case identifier su
 
 ## Running the prototype
 
-Create an environment with a PyTorch build suitable for your hardware, then install the remaining dependencies:
+Create a virtual environment and install the dependencies. If you need CUDA, install the PyTorch build appropriate for your hardware before running the command below.
 
 ```bash
 python -m venv .venv
@@ -122,20 +124,6 @@ python -m source.cond_ldm.generate_b800_cfg
 ```
 
 Checkpoints, generated images, logs, and datasets are excluded by `.gitignore`.
-
-## Research scope
-
-This code is a research prototype for studying cross-modal MRI synthesis. It does not include a trained model or a benchmark result, and it has not been clinically validated. Generated images must not be used for diagnosis or treatment decisions. The repository is not a medical device.
-
-## A broader direction
-
-Missing-modality synthesis is larger than one sequence pair. The same separation of responsibilities can be explored wherever one modality is common and another is informative but costly, slow, or inconsistently acquired:
-
-- learn a strong prior in the target modality;
-- preserve anatomy through an available source modality;
-- align representations instead of asking one network to learn everything at once.
-
-That framing turns virtual contrast from a single translation task into a reusable strategy for connecting complementary imaging protocols.
 
 ## License
 
